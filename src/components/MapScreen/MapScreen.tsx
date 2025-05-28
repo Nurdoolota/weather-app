@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, TextInput, TouchableOpacity, Text, ActivityIndicator, StyleSheet } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { geocodeCity } from "../../utils/geocodeCity";
+import { saveCity } from "../../utils/cityStorage"; // Добавь этот импорт!
 
 interface MapScreenProps {
   goToWeather: () => void;
@@ -14,10 +15,12 @@ const MapScreen: React.FC<MapScreenProps> = ({ goToWeather }) => {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleFindCity = async () => {
     setLoading(true);
     setError(null);
+    setIsSaved(false);
     const result = await geocodeCity(city);
     setLoading(false);
     if (result) {
@@ -26,6 +29,11 @@ const MapScreen: React.FC<MapScreenProps> = ({ goToWeather }) => {
       setError("Город не найден");
       setCoords(null);
     }
+  };
+
+  const handleSaveCity = async () => {
+    await saveCity(city);
+    setIsSaved(true);
   };
 
   return (
@@ -67,6 +75,17 @@ const MapScreen: React.FC<MapScreenProps> = ({ goToWeather }) => {
           <TouchableOpacity style={styles.findButton} onPress={handleFindCity} disabled={loading}>
             <Text style={styles.findButtonText}>Найти</Text>
           </TouchableOpacity>
+          {coords && (
+            <TouchableOpacity
+              style={[styles.saveButton, isSaved && styles.savedButton]}
+              onPress={handleSaveCity}
+              disabled={isSaved}
+            >
+              <Text style={styles.saveButtonText}>
+                {isSaved ? "Сохранено" : "☆ Сохранить"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
         {loading && <ActivityIndicator color="#fff" />}
         {error && <Text style={styles.error}>{error}</Text>}
@@ -114,7 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderBottomWidth: 1,
     borderColor: "#fff",
-    minWidth: 120,
+    minWidth: 100,
     fontSize: 16,
     marginRight: 8,
     paddingHorizontal: 4,
@@ -128,10 +147,26 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 8,
   },
   findButtonText: {
     color: "#fff",
     fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: "#27ae60",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  savedButton: {
+    backgroundColor: "#aaa",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 15,
   },
   error: {
     color: "#ff5b5b",
